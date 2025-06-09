@@ -134,8 +134,8 @@ app = workflow.compile()
 @flk.route("/process_data", methods=["POST"])
 def process_data():
     try:
-        data = request.get_json()  # Get JSON data from the request
-
+        data = request.get_json()  
+        print(data,"hello")
         if not data:
             return jsonify({"error": "No JSON data provided"}), 400
 
