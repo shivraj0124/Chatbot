@@ -11,35 +11,42 @@ from IPython.display import Image, display
 from langchain_core.messages import HumanMessage
 from dotenv import dotenv_values
 from flask_cors import CORS
+# For PDF Chunks splitter
+from langchain_community.document_loaders import PyPDFLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from pydantic import SecretStr
+
+
 config = dotenv_values(".env")
 
-# model_key = config.get("GPT_KEY")
-# google_key = config.get("GOOGLE_KEY")
-model_key = "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"
-google_key = "AIzaSyDGAV1f3FtHK8l6908cD4VFjeVtU36ECEk"
-print(model_key)
+model_key = config.get('GPT_KEY')
+google_key = config.get('GOOGLE_KEY')
+
+print(f"Model Key: {model_key}")
+print(f"Google Key: {google_key}")
+
 # For flask application
 # app.py
 from flask import Flask, request, jsonify
 
 flk = Flask(__name__)
 CORS(flk)
-CORS(flk, origins=["http://localhost:5173"])
-# For PDF Chunks splitter
-from langchain_community.document_loaders import PyPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+CORS(flk, origins="*")
 
-
-llm = ChatGroq(model_name="Gemma2-9b-It", api_key=model_key)
-glm = ChatGroq(model_name="Gemma2-9b-It", api_key=model_key)
+if model_key is None:
+    raise ValueError("GPT_KEY is missing from the environment variables.")
+llm = ChatGroq(model="Gemma2-9b-It", api_key=SecretStr(model_key))
+glm = ChatGroq(model="Gemma2-9b-It", api_key=SecretStr(model_key))
 
 # Setting up RAG application
-loader = PyPDFLoader(r"D:\Projects\PollyconnectHub\chatbot\bot.pdf")
+loader = PyPDFLoader("bot.pdf")
 doc = loader.load()
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 texts = text_splitter.split_documents(doc)
+if google_key is None:
+    raise ValueError("GOOGLE_KEY is missing from the environment variables.")
 embeddings = GoogleGenerativeAIEmbeddings(
-    model="models/embedding-001", google_api_key=google_key
+    model="models/embedding-001", google_api_key=SecretStr(google_key)
 )
 vectorStore = Chroma.from_documents(
     documents=texts, embedding=embeddings, persist_directory="./chroma_db"
@@ -135,7 +142,7 @@ app = workflow.compile()
 def process_data():
     try:
         data = request.get_json()  
-        print(data,"hello")
+        print(f"Received data: {data}")
         if not data:
             return jsonify({"error": "No JSON data provided"}), 400
 
