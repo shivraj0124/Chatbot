@@ -12,3 +12,4 @@ __pycache__/
 
 # Ignore virtual environment named 'vedant'
 vedant/
+chroma_db/
